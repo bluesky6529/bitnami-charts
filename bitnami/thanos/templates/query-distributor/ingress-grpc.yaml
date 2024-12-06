@@ -1,0 +1,57 @@
+{{- /*
+Copyright Broadcom, Inc. All Rights Reserved.
+SPDX-License-Identifier: APACHE-2.0
+*/}}
+
+{{- if .Values.queryDistributor.ingress.grpc.enabled -}}
+apiVersion: {{ include "common.capabilities.ingress.apiVersion" . }}
+kind: Ingress
+metadata:
+  name: {{ include "common.names.fullname" . }}-grpc
+  namespace: {{ include "common.names.namespace" . }}
+  labels: {{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 4 }}
+    app.kubernetes.io/component: query-distributor
+  {{- if or .Values.queryDistributor.ingress.grpc.annotations .Values.commonAnnotations }}
+  {{- $annotations := include "common.tplvalues.merge" ( dict "values" ( list .Values.queryDistributor.ingress.grpc.annotations .Values.commonAnnotations ) "context" . ) }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" $annotations "context" $) | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if and .Values.queryDistributor.ingress.grpc.ingressClassName (include "common.ingress.supportsIngressClassname" .) }}
+  ingressClassName: {{ .Values.queryDistributor.ingress.grpc.ingressClassName | quote }}
+  {{- end }}
+  rules:
+    {{- if .Values.queryDistributor.ingress.grpc.hostname }}
+    - host: {{ include "common.tplvalues.render" ( dict "value" .Values.queryDistributor.ingress.grpc.hostname "context" $ ) }}
+      http:
+        paths:
+          - path: {{ .Values.queryDistributor.ingress.grpc.path }}
+            {{- if eq "true" (include "common.ingress.supportsPathType" .) }}
+            pathType: {{ .Values.queryDistributor.ingress.grpc.pathType }}
+            {{- end }}
+            backend: {{- include "common.ingress.backend" (dict "serviceName" (printf "%s-%s"  (include "common.names.fullname" .) "queryDistributor-grpc") "servicePort" "grpc" "context" $)  | nindent 14 }}
+    {{- end }}
+    {{- range .Values.queryDistributor.ingress.grpc.extraHosts }}
+    - host: {{ .name }}
+      http:
+        paths:
+          - path: {{ default "/" .path }}
+            {{- if eq "true" (include "common.ingress.supportsPathType" $) }}
+            pathType: {{ default "ImplementationSpecific" .pathType }}
+            {{- end }}
+            backend: {{- include "common.ingress.backend" (dict "serviceName" (printf "%s-%s"  (include "common.names.fullname" $) "queryDistributor-grpc") "servicePort" "grpc" "context" $) | nindent 14 }}
+    {{- end }}
+    {{- if .Values.queryDistributor.ingress.grpc.extraRules }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.ingress.grpc.extraRules "context" $) | nindent 4 }}
+    {{- end }}
+  {{- if or (and .Values.queryDistributor.ingress.grpc.tls (or (include "common.ingress.certManagerRequest" ( dict "annotations" .Values.queryDistributor.ingress.grpc.annotations )) .Values.queryDistributor.ingress.grpc.selfSigned)) .Values.queryDistributor.ingress.grpc.extraTls }}
+  tls:
+    {{- if and .Values.queryDistributor.ingress.grpc.tls (or (include "common.ingress.certManagerRequest" ( dict "annotations" .Values.queryDistributor.ingress.grpc.annotations )) .Values.queryDistributor.ingress.grpc.selfSigned) }}
+    - hosts:
+        - {{ .Values.queryDistributor.ingress.grpc.hostname }}
+      secretName: {{ .Values.queryDistributor.ingress.grpc.secretName | default (printf "%s-tls" .Values.queryDistributor.ingress.grpc.hostname) }}
+    {{- end }}
+    {{- if .Values.queryDistributor.ingress.grpc.extraTls }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.ingress.grpc.extraTls "context" $) | nindent 4 }}
+    {{- end }}
+  {{- end }}
+{{- end }}

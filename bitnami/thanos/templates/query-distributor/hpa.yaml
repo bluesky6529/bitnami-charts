@@ -1,0 +1,58 @@
+{{- /*
+Copyright Broadcom, Inc. All Rights Reserved.
+SPDX-License-Identifier: APACHE-2.0
+*/}}
+
+{{- if and .Values.queryDistributor.enabled .Values.queryDistributor.autoscaling.enabled }}
+apiVersion: {{ include "common.capabilities.hpa.apiVersion" ( dict "context" $ ) }}
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "thanos.query-distributor.fullname" . }}
+  namespace: {{ include "common.names.namespace" . }}
+  labels: {{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 4 }}
+    app.kubernetes.io/component: query-distributor
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+spec:
+  scaleTargetRef:
+    apiVersion: {{ include "common.capabilities.deployment.apiVersion" . }}
+    kind: Deployment
+    name: {{ include "thanos.query-distributor.fullname" . }}
+  minReplicas: {{ .Values.queryDistributor.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.queryDistributor.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.queryDistributor.autoscaling.targetMemory }}
+    - type: Resource
+      resource:
+        name: memory
+        {{- if semverCompare "<1.23-0" (include "common.capabilities.kubeVersion" .) }}
+        targetAverageUtilization: {{ .Values.queryDistributor.autoscaling.targetMemory }}
+        {{- else }}
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.queryDistributor.autoscaling.targetMemory }}
+        {{- end }}
+    {{- end }}
+    {{- if .Values.queryDistributor.autoscaling.targetCPU }}
+    - type: Resource
+      resource:
+        name: cpu
+        {{- if semverCompare "<1.23-0" (include "common.capabilities.kubeVersion" .) }}
+        targetAverageUtilization: {{ .Values.queryDistributor.autoscaling.targetCPU }}
+        {{- else }}
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.queryDistributor.autoscaling.targetCPU }}
+        {{- end }}
+    {{- end }}
+    {{- range $targetPodMetric := .Values.queryDistributor.autoscaling.targetPodMetrics }}
+    - type: Pods
+      pods:
+        metric:
+          name: {{ $targetPodMetric.name }}
+        target:
+          type: AverageValue
+          averageValue: {{ $targetPodMetric.averageValue }}
+    {{- end }}
+{{- end }}

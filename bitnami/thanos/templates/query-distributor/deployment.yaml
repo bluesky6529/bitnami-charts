@@ -1,0 +1,294 @@
+{{- /*
+Copyright Broadcom, Inc. All Rights Reserved.
+SPDX-License-Identifier: APACHE-2.0
+*/}}
+
+{{- if .Values.queryDistributor.enabled }}
+apiVersion: {{ include "common.capabilities.deployment.apiVersion" . }}
+kind: Deployment
+metadata:
+  name: {{ include "thanos.query-distributor.fullname" . }}
+  namespace: {{ include "common.names.namespace" . }}
+  labels: {{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 4 }}
+    app.kubernetes.io/component: query-distributor
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if not .Values.queryDistributor.autoscaling.enabled }}
+  replicas: {{ .Values.queryDistributor.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: {{ .Values.queryDistributor.revisionHistoryLimit }}
+  {{- if .Values.queryDistributor.updateStrategy }}
+  strategy: {{- toYaml .Values.queryDistributor.updateStrategy | nindent 4 }}
+  {{- end }}
+  {{- $podLabels := include "common.tplvalues.merge" ( dict "values" ( list .Values.queryDistributor.podLabels .Values.commonLabels ) "context" . ) }}
+  selector:
+    matchLabels: {{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" $ ) | nindent 6 }}
+      app.kubernetes.io/component: query-distributor
+  template:
+    metadata:
+      labels: {{- include "common.labels.standard" ( dict "customLabels" $podLabels "context" $ ) | nindent 8 }}
+        app.kubernetes.io/component: query-distributor
+      {{- if or .Values.queryDistributor.podAnnotations (include "thanos.queryDistributor.createSDConfigmap" .) }}
+      annotations:
+        {{- if (include "thanos.queryDistributor.createSDConfigmap" .) }}
+        checksum/queryDistributor-sd-configuration: {{ include "thanos.queryDistributorSDConfigMap" . | sha256sum }}
+        {{- end }}
+        {{- if .Values.queryDistributor.podAnnotations }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.podAnnotations "context" $) | nindent 8 }}
+        {{- end }}
+      {{- end }}
+    spec:
+      {{- include "thanos.imagePullSecrets" . | nindent 6 }}
+      serviceAccountName: {{ include "thanos.query-distributor.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.queryDistributor.automountServiceAccountToken }}
+      {{- if .Values.queryDistributor.hostAliases }}
+      hostAliases: {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.hostAliases "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.queryDistributor.affinity }}
+      affinity: {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.affinity "context" $) | nindent 8 }}
+      {{- else }}
+      affinity:
+        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.queryDistributor.podAffinityPreset "component" "queryDistributor" "customLabels" $podLabels "context" $) | nindent 10 }}
+        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.queryDistributor.podAntiAffinityPreset "component" "queryDistributor" "topologyKey" .Values.queryDistributor.podAntiAffinityPresetTopologyKey "customLabels" $podLabels "context" $) | nindent 10 }}
+        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.queryDistributor.nodeAffinityPreset.type "key" .Values.queryDistributor.nodeAffinityPreset.key "values" .Values.queryDistributor.nodeAffinityPreset.values) | nindent 10 }}
+      {{- end }}
+      {{- if .Values.queryDistributor.dnsConfig }}
+      dnsConfig: {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.dnsConfig "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.queryDistributor.dnsPolicy }}
+      dnsPolicy: {{ .Values.queryDistributor.dnsPolicy | quote }}
+      {{- end }}
+      {{- if .Values.queryDistributor.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.queryDistributor.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.tolerations "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.queryDistributor.priorityClassName }}
+      priorityClassName: {{ .Values.queryDistributor.priorityClassName | quote }}
+      {{- end }}
+      {{- if .Values.queryDistributor.schedulerName }}
+      schedulerName: {{ .Values.queryDistributor.schedulerName }}
+      {{- end }}
+      {{- if .Values.queryDistributor.podSecurityContext.enabled }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.queryDistributor.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.queryDistributor.topologySpreadConstraints }}
+      topologySpreadConstraints: {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.topologySpreadConstraints "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.queryDistributor.initContainers }}
+      initContainers: {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.initContainers "context" $) | nindent 8 }}
+      {{- end }}
+      containers:
+        {{- if .Values.queryDistributor.sidecars }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.sidecars "context" $) | nindent 8 }}
+        {{- end }}
+        - name: query-distributor
+          image: {{ include "thanos.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          {{- if .Values.queryDistributor.containerSecurityContext.enabled }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.queryDistributor.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.queryDistributor.command }}
+          command: {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.command "context" $) | nindent 12 }}
+          {{- end }}
+          args:
+            {{- if .Values.queryDistributor.args }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.args "context" $) | nindent 12 }}
+            {{- else }}
+            - query
+            - --query.mode=distributed
+            - --log.level={{ .Values.queryDistributor.logLevel }}
+            - --log.format={{ .Values.queryDistributor.logFormat }}
+            - --grpc-address=0.0.0.0:10901
+            - --http-address=0.0.0.0:10902
+            {{- if (include "thanos.httpConfigEnabled" .) }}
+            - --http.config=/conf/http/http-config.yml
+            {{- end }}
+            {{- if or (include "thanos.queryDistributor.createSDConfigmap" .) .Values.queryDistributor.existingSDConfigmap }}
+            - --store.sd-files=/conf/sd/servicediscovery.yml
+            {{- end }}
+            {{- if and .Values.queryDistributor.dnsDiscovery.enabled .Values.queryDistributor.dnsDiscovery.sidecarsService .Values.queryDistributor.dnsDiscovery.sidecarsNamespace }}
+            - --endpoint=dnssrv+_grpc._tcp.{{- include "common.tplvalues.render" ( dict "value" .Values.queryDistributor.dnsDiscovery.sidecarsService "context" $) -}}.{{- include "common.tplvalues.render"  ( dict "value" .Values.queryDistributor.dnsDiscovery.sidecarsNamespace "context" $) -}}.svc.{{ .Values.clusterDomain }}
+            {{- end }}
+            {{- if and .Values.storegateway.enabled .Values.storegateway.sharded.enabled }}
+            {{- $shards := int 0 }}
+            {{- if .Values.storegateway.sharded.hashPartitioning.shards }}
+            {{- $shards = int .Values.storegateway.sharded.hashPartitioning.shards }}
+            {{- else }}
+            {{- $shards = len .Values.storegateway.sharded.timePartitioning }}
+            {{- end }}
+            {{- range $index, $_ := until $shards }}
+            {{- if $.Values.storegateway.useEndpointGroup }}
+            - --endpoint-group={{ include "common.names.fullname" $ }}-storegateway-{{ toString $index }}.{{ $.Release.Namespace }}.svc.{{ $.Values.clusterDomain }}:{{ $.Values.storegateway.service.ports.grpc }}
+            {{- else }}
+            - --endpoint=dnssrv+_grpc._tcp.{{ include "common.names.fullname" $ }}-storegateway-{{ toString $index }}.{{ $.Release.Namespace }}.svc.{{ $.Values.clusterDomain }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- if and .Values.storegateway.enabled .Values.queryDistributor.dnsDiscovery.enabled (not .Values.storegateway.sharded.enabled ) }}
+            {{- if .Values.storegateway.useEndpointGroup }}
+            - --endpoint-group={{ include "thanos.storegateway.fullname" . }}{{ if .Values.storegateway.service.additionalHeadless }}-headless{{ end }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:{{ .Values.storegateway.service.ports.grpc }}
+            {{- else }}
+            - --endpoint=dnssrv+_grpc._tcp.{{ include "thanos.storegateway.fullname" . }}{{ if .Values.storegateway.service.additionalHeadless }}-headless{{ end }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}
+            {{- end }}
+            {{- end }}
+            {{- if and .Values.ruler.enabled .Values.queryDistributor.dnsDiscovery.enabled }}
+            - --endpoint=dnssrv+_grpc._tcp.{{ include "thanos.ruler.fullname" . }}{{ if .Values.ruler.service.additionalHeadless }}-headless{{ end }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}
+            {{- end }}
+            {{- if and .Values.receive.enabled .Values.queryDistributor.dnsDiscovery.enabled }}
+            - --endpoint=dnssrv+_grpc._tcp.{{ include "thanos.receive.fullname" . }}{{ if .Values.receive.service.additionalHeadless }}-headless{{ end }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}
+            {{- end }}
+            {{- range .Values.queryDistributor.stores }}
+            - --endpoint={{ . }}
+            {{- end }}
+            {{- if .Values.queryDistributor.grpc.server.tls.enabled }}
+            - --grpc-server-tls-cert=/certs/server/{{ include "common.secrets.key" (dict "existingSecret" .Values.queryDistributor.grpc.server.tls.existingSecret "key" "tls-cert") }}
+            - --grpc-server-tls-key=/certs/server/{{ include "common.secrets.key" (dict "existingSecret" .Values.queryDistributor.grpc.server.tls.existingSecret "key" "tls-key") }}
+            {{- if .Values.queryDistributor.grpc.server.tls.clientAuthEnabled }}
+            - --grpc-server-tls-client-ca=/certs/server/{{ include "common.secrets.key" (dict "existingSecret" .Values.queryDistributor.grpc.server.tls.existingSecret "key" "ca-cert") }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.queryDistributor.grpc.client.tls.enabled }}
+            - --grpc-client-tls-secure
+            - --grpc-client-tls-cert=/certs/client/{{ include "common.secrets.key" (dict "existingSecret" .Values.queryDistributor.grpc.client.tls.existingSecret "key" "tls-cert") }}
+            - --grpc-client-tls-key=/certs/client/{{ include "common.secrets.key" (dict "existingSecret" .Values.queryDistributor.grpc.client.tls.existingSecret "key" "tls-key") }}
+            - --grpc-client-tls-ca=/certs/client/{{ include "common.secrets.key" (dict "existingSecret" .Values.queryDistributor.grpc.client.tls.existingSecret "key" "ca-cert") }}
+            {{- if .Values.queryDistributor.grpc.client.tls.autoGenerated }}
+            - --grpc-client-tls-skip-verify
+            {{- end }}
+            {{- end }}
+            {{- if .Values.queryDistributor.grpc.client.serverName }}
+            - --grpc-client-server-name={{ .Values.queryDistributor.grpc.client.serverName }}
+            {{- end }}
+            {{- if .Values.queryDistributor.extraFlags }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.extraFlags "context" $) | nindent 12 }}
+            {{- end }}
+            {{- end }}
+          {{- if .Values.queryDistributor.extraEnvVars }}
+          env: {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.extraEnvVars "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if or .Values.queryDistributor.extraEnvVarsCM .Values.queryDistributor.extraEnvVarsSecret }}
+          envFrom:
+            {{- if .Values.queryDistributor.extraEnvVarsCM }}
+            - configMapRef:
+                name: {{ include "common.tplvalues.render" (dict "value" .Values.queryDistributor.extraEnvVarsCM "context" $) }}
+            {{- end }}
+            {{- if .Values.queryDistributor.extraEnvVarsSecret }}
+            - secretRef:
+                name: {{ include "common.tplvalues.render" (dict "value" .Values.queryDistributor.extraEnvVarsSecret "context" $) }}
+            {{- end }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 10902
+              protocol: TCP
+            - name: grpc
+              containerPort: 10901
+              protocol: TCP
+          {{- if .Values.queryDistributor.customLivenessProbe }}
+          livenessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.customLivenessProbe "context" $) | nindent 12 }}
+          {{- else if .Values.queryDistributor.livenessProbe.enabled }}
+          livenessProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.queryDistributor.livenessProbe "enabled") "context" $) | nindent 12 }}
+            {{- if not .Values.auth.basicAuthUsers }}
+            httpGet:
+              path: /-/healthy
+              port: http
+              scheme: {{ ternary "HTTPS" "HTTP" .Values.https.enabled }}
+            {{- else }}
+            tcpSocket:
+              port: http
+            {{- end }}
+          {{- end }}
+          {{- if .Values.queryDistributor.customReadinessProbe }}
+          readinessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.customReadinessProbe "context" $) | nindent 12 }}
+          {{- else if .Values.queryDistributor.readinessProbe.enabled }}
+          readinessProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.queryDistributor.readinessProbe "enabled") "context" $) | nindent 12 }}
+            {{- if not .Values.auth.basicAuthUsers }}
+            httpGet:
+              path: /-/ready
+              port: http
+              scheme: {{ ternary "HTTPS" "HTTP" .Values.https.enabled }}
+            {{- else }}
+            tcpSocket:
+              port: http
+            {{- end }}
+          {{- end }}
+          {{- if .Values.queryDistributor.customStartupProbe }}
+          startupProbe: {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.customStartupProbe "context" $) | nindent 12 }}
+          {{- else if .Values.queryDistributor.startupProbe.enabled }}
+          startupProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.queryDistributor.startupProbe "enabled") "context" $) | nindent 12 }}
+            {{- if not .Values.auth.basicAuthUsers }}
+            httpGet:
+              path: /-/ready
+              port: http
+              scheme: {{ ternary "HTTPS" "HTTP" .Values.https.enabled }}
+            {{- else }}
+            tcpSocket:
+              port: http
+            {{- end }}
+          {{- end }}
+          {{- if .Values.queryDistributor.lifecycleHooks }}
+          lifecycle: {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.lifecycleHooks "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.queryDistributor.resources }}
+          resources: {{- toYaml .Values.queryDistributor.resources | nindent 12 }}
+          {{- else if ne .Values.queryDistributor.resourcesPreset "none" }}
+          resources: {{- include "common.resources.preset" (dict "type" .Values.queryDistributor.resourcesPreset) | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- if (include "thanos.httpConfigEnabled" .) }}
+            - name: http-config
+              mountPath: /conf/http
+            {{- if .Values.https.enabled }}
+            - name: http-certs
+              mountPath: /certs
+            {{- end }}
+            {{- end }}
+            {{- if or (include "thanos.queryDistributor.createSDConfigmap" .) .Values.queryDistributor.existingSDConfigmap }}
+            - name: sd-config
+              mountPath: /conf/sd
+            {{- end }}
+            {{- if .Values.queryDistributor.grpc.server.tls.enabled }}
+            - name: grpc-server-tls
+              mountPath: /certs/server
+            {{- end }}
+            {{- if .Values.queryDistributor.grpc.client.tls.enabled }}
+            - name: grpc-client-tls
+              mountPath: /certs/client
+            {{- end }}
+            {{- if .Values.queryDistributor.extraVolumeMounts }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.extraVolumeMounts "context" $) | nindent 12 }}
+            {{- end }}
+      volumes:
+        {{- if (include "thanos.httpConfigEnabled" .) }}
+        - name: http-config
+          secret:
+            secretName: {{ include "thanos.httpConfigSecretName" . }}
+        {{- if .Values.https.enabled }}
+        - name: http-certs
+          secret:
+            secretName: {{ include "thanos.httpCertsSecretName" . }}
+        {{- end }}
+        {{- end }}
+        {{- if or (include "thanos.queryDistributor.createSDConfigmap" .) .Values.queryDistributor.existingSDConfigmap }}
+        - name: sd-config
+          configMap:
+            name: {{ include "thanos.queryDistributor.SDConfigmapName" . }}
+        {{- end }}
+        {{- if .Values.queryDistributor.grpc.server.tls.enabled }}
+        - name: grpc-server-tls
+          secret:
+            secretName: {{ include "common.secrets.name" (dict "existingSecret" .Values.queryDistributor.grpc.server.tls.existingSecret "defaultNameSuffix" "queryDistributor-grpc-server" "context" $) }}
+        {{- end }}
+        {{- if .Values.queryDistributor.grpc.client.tls.enabled }}
+        - name: grpc-client-tls
+          secret:
+            secretName: {{ include "common.secrets.name" (dict "existingSecret" .Values.queryDistributor.grpc.client.tls.existingSecret "defaultNameSuffix" "queryDistributor-grpc-client" "context" $) }}
+        {{- end }}
+        {{- if .Values.queryDistributor.extraVolumes }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.extraVolumes "context" $) | nindent 8 }}
+        {{- end }}
+{{- end }}

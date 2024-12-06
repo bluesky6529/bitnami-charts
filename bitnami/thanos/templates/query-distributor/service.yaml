@@ -1,0 +1,55 @@
+{{- /*
+Copyright Broadcom, Inc. All Rights Reserved.
+SPDX-License-Identifier: APACHE-2.0
+*/}}
+
+{{- if .Values.queryDistributor.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "thanos.query-distributor.fullname" . }}
+  namespace: {{ include "common.names.namespace" . }}
+  {{- $labels := include "common.tplvalues.merge" ( dict "values" ( list .Values.queryDistributor.service.labels .Values.commonLabels ) "context" . ) }}
+  labels: {{- include "common.labels.standard" ( dict "customLabels" $labels "context" $ ) | nindent 4 }}
+    app.kubernetes.io/component: query-distributor
+    {{- include "thanos.servicemonitor.matchLabels" . | nindent 4 -}}
+  {{- if or .Values.queryDistributor.service.annotations .Values.commonAnnotations }}
+  {{- $annotations := include "common.tplvalues.merge" ( dict "values" ( list .Values.queryDistributor.service.annotations .Values.commonAnnotations ) "context" . ) }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" $annotations "context" $) | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.queryDistributor.service.type }}
+  {{- if and .Values.queryDistributor.service.clusterIP (eq .Values.queryDistributor.service.type "ClusterIP") }}
+  clusterIP: {{ .Values.queryDistributor.service.clusterIP }}
+  {{- end }}
+  {{- if ne .Values.queryDistributor.service.type "ClusterIP" }}
+  externalTrafficPolicy: {{ .Values.queryDistributor.service.externalTrafficPolicy }}
+  {{- end }}
+  {{- if and .Values.queryDistributor.service.loadBalancerIP (eq .Values.queryDistributor.service.type "LoadBalancer") }}
+  loadBalancerIP: {{ .Values.queryDistributor.service.loadBalancerIP }}
+  {{- end }}
+  {{- if and (eq .Values.queryDistributor.service.type "LoadBalancer") .Values.queryDistributor.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges: {{- toYaml .Values.queryDistributor.service.loadBalancerSourceRanges | nindent 4 }}
+  {{- end }}
+  ports:
+    - port: {{ .Values.queryDistributor.service.ports.http }}
+      targetPort: http
+      protocol: TCP
+      name: http
+      {{- if and (or (eq .Values.queryDistributor.service.type "NodePort") (eq .Values.queryDistributor.service.type "LoadBalancer")) .Values.queryDistributor.service.nodePorts.http }}
+      nodePort: {{ .Values.queryDistributor.service.nodePorts.http }}
+      {{- else if eq .Values.queryDistributor.service.type "ClusterIP" }}
+      nodePort: null
+      {{- end }}
+    {{- if .Values.queryDistributor.service.extraPorts }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.service.extraPorts "context" $) | nindent 4 }}
+    {{- end }}
+  selector:
+    {{- if .Values.queryDistributor.service.labelSelectorsOverride }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.queryDistributor.service.labelSelectorsOverride "context" $) | nindent 4 }}
+    {{- else }}
+    {{- $podLabels := include "common.tplvalues.merge" ( dict "values" ( list .Values.queryDistributor.podLabels .Values.commonLabels ) "context" . ) }}
+    {{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" $ ) | nindent 4 }}
+    app.kubernetes.io/component: query-distributor
+    {{- end }}
+{{- end }}

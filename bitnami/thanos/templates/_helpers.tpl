@@ -50,6 +50,13 @@ Return the proper Thanos query fullname
 {{- end -}}
 
 {{/*
+Return the proper Thanos query-distributor fullname
+*/}}
+{{- define "thanos.query-distributor.fullname" -}}
+{{- printf "%s-%s" (include "common.names.fullname" .) "query-distributor" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
 Return the proper Thanos receive-distributor fullname
 */}}
 {{- define "thanos.receive-distributor.fullname" -}}
@@ -248,6 +255,16 @@ Return true if a configmap object should be created
 {{- end -}}
 
 {{/*
+Return true if a configmap object should be created
+*/}}
+{{- define "thanos.queryDistributor.createSDConfigmap" -}}
+{{- if and .Values.queryDistributor.sdConfig (not .Values.queryDistributor.existingSDConfigmap) }}
+    {{- true -}}
+{{- else -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Return the Thanos Ruler configuration configmap.
 */}}
 {{- define "thanos.ruler.configmapName" -}}
@@ -355,6 +372,17 @@ Create the name of the service account to use (query)
     {{ default (include "thanos.query.fullname" .) .Values.query.serviceAccount.name }}
 {{- else -}}
     {{ default "default" .Values.query.serviceAccount.name }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Create the name of the service account to use (queryDistributor)
+*/}}
+{{- define "thanos.query-distributor.serviceAccountName" -}}
+{{- if .Values.queryDistributor.serviceAccount.create -}}
+    {{ default (include "thanos.query-distributor.fullname" .) .Values.queryDistributor.serviceAccount.name }}
+{{- else -}}
+    {{ default "default" .Values.queryDistributor.serviceAccount.name }}
 {{- end -}}
 {{- end -}}
 

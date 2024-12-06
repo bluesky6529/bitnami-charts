@@ -66,7 +66,7 @@ extraDeploy: []
 image:
   registry: docker.io
   repository: bitnami/thanos
-  tag: 0.37.1-debian-12-r0
+  tag: 0.37.0-debian-12-r0
   digest: ""
   ## ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
   ##
@@ -931,6 +931,791 @@ query:
       ##
       path: /
       ## @param query.ingress.grpc.pathType Ingress Path type
+      ##
+      pathType: ImplementationSpecific
+## @section Thanos Query Distributor parameters
+queryDistributor:
+  ## @param queryDistributor.enabled Set to true to enable Thanos Query component
+  ##
+  enabled: false
+  ## @param queryDistributor.logLevel Thanos Query log level
+  ##
+  logLevel: info
+  ## @param queryDistributor.logFormat Thanos Query log format
+  ##
+  logFormat: logfmt
+  ## Dynamically configure store APIs using DNS discovery
+  ## @param queryDistributor.dnsDiscovery.enabled Enable store APIs discovery via DNS
+  ## @param queryDistributor.dnsDiscovery.sidecarsService Sidecars service name to discover them using DNS discovery
+  ## @param queryDistributor.dnsDiscovery.sidecarsNamespace Sidecars namespace to discover them using DNS discovery
+  ##
+  dnsDiscovery:
+    enabled: true
+    sidecarsService: ""
+    sidecarsNamespace: ""
+  ## @param queryDistributor.stores Statically configure store APIs to connect with Thanos Query
+  ##
+  stores: []
+  ## @param queryDistributor.sdConfig Query Service Discovery Configuration
+  ## Specify content for servicediscovery.yml
+  ##
+  sdConfig: ""
+  ## @param queryDistributor.existingSDConfigmap Name of existing ConfigMap with Ruler configuration
+  ## NOTE: This will override queryDistributor.sdConfig
+  ##
+  existingSDConfigmap: ""
+  ## @param queryDistributor.extraEnvVars Extra environment variables for Thanos Query container
+  ## e.g:
+  ## extraEnvVars:
+  ##   - name: FOO
+  ##     value: "bar"
+  ##
+  extraEnvVars: []
+  ## @param queryDistributor.extraEnvVarsCM Name of existing ConfigMap containing extra env vars for Thanos Query nodes
+  ##
+  extraEnvVarsCM: ""
+  ## @param queryDistributor.extraEnvVarsSecret Name of existing Secret containing extra env vars for Thanos Query nodes
+  ##
+  extraEnvVarsSecret: ""
+  ## @param queryDistributor.extraFlags Extra Flags to passed to Thanos Query
+  ##
+  extraFlags: []
+  ## @param queryDistributor.command Override default container command (useful when using custom images)
+  ##
+  command: []
+  ## @param queryDistributor.args Override default container args (useful when using custom images)
+  ##
+  args: []
+  ## @param queryDistributor.replicaCount Number of Thanos Query replicas to deploy
+  ##
+  replicaCount: 1
+  ## @param queryDistributor.revisionHistoryLimit The number of old history to retain to allow rollback
+  ##
+  revisionHistoryLimit: 10
+  ## @param queryDistributor.updateStrategy.type Update strategy type for Thanos Query replicas
+  ##
+  updateStrategy:
+    type: RollingUpdate
+  ## @param queryDistributor.containerPorts.http HTTP container port
+  ## @param queryDistributor.containerPorts.grpc HTTP container port
+  ##
+  containerPorts:
+    http: 10902
+    grpc: 10901
+  ## K8s Pod Security Context for Thanos Query pods
+  ## https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  ## @param queryDistributor.podSecurityContext.enabled Enable security context for the Thanos Query pods
+  ## @param queryDistributor.podSecurityContext.fsGroupChangePolicy Set filesystem group change policy
+  ## @param queryDistributor.podSecurityContext.sysctls Set kernel settings using the sysctl interface
+  ## @param queryDistributor.podSecurityContext.supplementalGroups Set filesystem extra groups
+  ## @param queryDistributor.podSecurityContext.fsGroup Group ID for the filesystem used by Thanos Query pods
+  ##
+  podSecurityContext:
+    enabled: true
+    fsGroupChangePolicy: Always
+    sysctls: []
+    supplementalGroups: []
+    fsGroup: 1001
+  ## K8s containers' Security Context for Thanos Query containers
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container
+  ## @param queryDistributor.containerSecurityContext.enabled Enabled containers' Security Context
+  ## @param queryDistributor.containerSecurityContext.seLinuxOptions [object,nullable] Set SELinux options in container
+  ## @param queryDistributor.containerSecurityContext.runAsUser Set containers' Security Context runAsUser
+  ## @param queryDistributor.containerSecurityContext.runAsGroup Set containers' Security Context runAsGroup
+  ## @param queryDistributor.containerSecurityContext.runAsNonRoot Set container's Security Context runAsNonRoot
+  ## @param queryDistributor.containerSecurityContext.privileged Set container's Security Context privileged
+  ## @param queryDistributor.containerSecurityContext.readOnlyRootFilesystem Set container's Security Context readOnlyRootFilesystem
+  ## @param queryDistributor.containerSecurityContext.allowPrivilegeEscalation Set container's Security Context allowPrivilegeEscalation
+  ## @param queryDistributor.containerSecurityContext.capabilities.drop List of capabilities to be dropped
+  ## @param queryDistributor.containerSecurityContext.seccompProfile.type Set container's Security Context seccomp profile
+  ##
+  containerSecurityContext:
+    enabled: true
+    seLinuxOptions: {}
+    runAsUser: 1001
+    runAsGroup: 1001
+    runAsNonRoot: true
+    privileged: false
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+    seccompProfile:
+      type: "RuntimeDefault"
+  ## Thanos Query containers' resource requests and limits
+  ## ref: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
+  ## @param queryDistributor.resourcesPreset Set container resources according to one common preset (allowed values: none, nano, micro, small, medium, large, xlarge, 2xlarge). This is ignored if queryDistributor.resources is set (queryDistributor.resources is recommended for production).
+  ## More information: https://github.com/bitnami/charts/blob/main/bitnami/common/templates/_resources.tpl#L15
+  ##
+  resourcesPreset: "nano"
+  ## @param queryDistributor.resources Set container requests and limits for different resources like CPU or memory (essential for production workloads)
+  ## Example:
+  ## resources:
+  ##   requests:
+  ##     cpu: 2
+  ##     memory: 512Mi
+  ##   limits:
+  ##     cpu: 3
+  ##     memory: 1024Mi
+  ##
+  resources: {}
+  ## Configure extra options for Thanos Query containers' liveness and readiness probes
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#configure-probes
+  ## @param queryDistributor.livenessProbe.enabled Enable livenessProbe on Thanos Query containers
+  ## @param queryDistributor.livenessProbe.initialDelaySeconds Initial delay seconds for livenessProbe
+  ## @param queryDistributor.livenessProbe.periodSeconds Period seconds for livenessProbe
+  ## @param queryDistributor.livenessProbe.timeoutSeconds Timeout seconds for livenessProbe
+  ## @param queryDistributor.livenessProbe.failureThreshold Failure threshold for livenessProbe
+  ## @param queryDistributor.livenessProbe.successThreshold Success threshold for livenessProbe
+  ##
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    timeoutSeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 6
+  ## @param queryDistributor.readinessProbe.enabled Enable readinessProbe on Thanos Query containers
+  ## @param queryDistributor.readinessProbe.initialDelaySeconds Initial delay seconds for readinessProbe
+  ## @param queryDistributor.readinessProbe.periodSeconds Period seconds for readinessProbe
+  ## @param queryDistributor.readinessProbe.timeoutSeconds Timeout seconds for readinessProbe
+  ## @param queryDistributor.readinessProbe.failureThreshold Failure threshold for readinessProbe
+  ## @param queryDistributor.readinessProbe.successThreshold Success threshold for readinessProbe
+  ##
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    timeoutSeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 6
+  ## @param queryDistributor.startupProbe.enabled Enable startupProbe on Thanos Query containers
+  ## @param queryDistributor.startupProbe.initialDelaySeconds Initial delay seconds for startupProbe
+  ## @param queryDistributor.startupProbe.periodSeconds Period seconds for startupProbe
+  ## @param queryDistributor.startupProbe.timeoutSeconds Timeout seconds for startupProbe
+  ## @param queryDistributor.startupProbe.failureThreshold Failure threshold for startupProbe
+  ## @param queryDistributor.startupProbe.successThreshold Success threshold for startupProbe
+  ##
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 1
+    failureThreshold: 15
+    successThreshold: 1
+  ## @param queryDistributor.customLivenessProbe Custom livenessProbe that overrides the default one
+  ##
+  customLivenessProbe: {}
+  ## @param queryDistributor.customReadinessProbe Custom readinessProbe that overrides the default one
+  ##
+  customReadinessProbe: {}
+  ## @param queryDistributor.customStartupProbe Custom startupProbe that overrides the default one
+  ##
+  customStartupProbe: {}
+  ## @param queryDistributor.initContainers Add additional init containers to the Thanos Query pods
+  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
+  ## e.g:
+  ## initContainers:
+  ##  - name: your-image-name
+  ##    image: your-image
+  ##    imagePullPolicy: Always
+  ##    command: ['sh', '-c', 'echo "hello world"']
+  ##
+  initContainers: []
+  ## @param queryDistributor.sidecars Extra containers running as sidecars to Thanos Query pods
+  ## e.g:
+  ## sidecars:
+  ##   - name: your-image-name
+  ##     image: your-image
+  ##     imagePullPolicy: Always
+  ##     ports:
+  ##       - name: portname
+  ##         containerPort: 1234
+  ##
+  sidecars: []
+  ## @param queryDistributor.extraVolumes Extra volumes to add to Thanos Query
+  ##
+  extraVolumes: []
+  ## @param queryDistributor.extraVolumeMounts Extra volume mounts to add to the queryDistributor container
+  ##
+  extraVolumeMounts: []
+  ## @param queryDistributor.podAffinityPreset Thanos Query pod affinity preset
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  ##
+  podAffinityPreset: ""
+  ## @param queryDistributor.podAntiAffinityPreset Thanos Query pod anti-affinity preset. Ignored if `queryDistributor.affinity` is set. Allowed values: `soft` or `hard`
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  ##
+  podAntiAffinityPreset: soft
+  ## @param queryDistributor.podAntiAffinityPresetTopologyKey Thanos Query pod anti-affinity topologyKey. Ignored if `queryDistributor.affinity` is set.
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  ##
+  podAntiAffinityPresetTopologyKey: ""
+  ## Thanos Query node affinity preset
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
+  ##
+  nodeAffinityPreset:
+    ## @param queryDistributor.nodeAffinityPreset.type Thanos Query node affinity preset type. Ignored if `queryDistributor.affinity` is set. Allowed values: `soft` or `hard`
+    ##
+    type: ""
+    ## @param queryDistributor.nodeAffinityPreset.key Thanos Query node label key to match Ignored if `queryDistributor.affinity` is set.
+    ## e.g:
+    ## key: "kubernetes.io/e2e-az-name"
+    ##
+    key: ""
+    ## @param queryDistributor.nodeAffinityPreset.values Thanos Query node label values to match. Ignored if `queryDistributor.affinity` is set.
+    ## e.g:
+    ## values:
+    ##   - e2e-az1
+    ##   - e2e-az2
+    ##
+    values: []
+  ## @param queryDistributor.affinity Thanos Query affinity for pod assignment
+  ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+  ## Note: queryDistributor.podAffinityPreset, queryDistributor.podAntiAffinityPreset, and queryDistributor.nodeAffinityPreset will be ignored when it's set
+  ##
+  affinity: {}
+  ## @param queryDistributor.nodeSelector Thanos Query node labels for pod assignment
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+  ##
+  nodeSelector: {}
+  ## @param queryDistributor.tolerations Thanos Query tolerations for pod assignment
+  ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+  ##
+  tolerations: []
+  ## @param queryDistributor.podLabels Thanos Query pod labels
+  ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+  ##
+  podLabels: {}
+  ## @param queryDistributor.podAnnotations Annotations for Thanos Query pods
+  ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+  ##
+  podAnnotations: {}
+  ## @param queryDistributor.dnsConfig Deployment pod DNS config
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/
+  ## E.g.
+  ## dnsConfig:
+  ##   options:
+  ##   - name: ndots
+  ##     value: "4"
+  ##   - name: single-request-reopen
+  ##
+  dnsConfig: {}
+  ## @param queryDistributor.dnsPolicy Deployment pod DNS policy
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/
+  ## E.g.
+  ## dnsPolicy: ClusterFirstWithHostNet
+  ##
+  dnsPolicy: ""
+  ## @param queryDistributor.hostAliases Deployment pod host aliases
+  ## https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/
+  ##
+  hostAliases: []
+  ## @param queryDistributor.lifecycleHooks for the Thanos Query container(s) to automate configuration before or after startup
+  ##
+  lifecycleHooks: {}
+  ## @param queryDistributor.priorityClassName Thanos Query priorityClassName
+  ## ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/
+  ##
+  priorityClassName: ""
+  ## @param queryDistributor.schedulerName Name of the k8s scheduler (other than default) for Thanos Query pods
+  ## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
+  ##
+  schedulerName: ""
+  ## @param queryDistributor.topologySpreadConstraints Topology Spread Constraints for Thanos Query pods assignment spread across your cluster among failure-domains
+  ## Ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/#spread-constraints-for-pods
+  ##
+  topologySpreadConstraints: []
+  ## Thanos Query GRPC parameters
+  ## ref: https://github.com/thanos-io/thanos/blob/master/docs/components/queryDistributor.md#flags
+  ##
+  grpc:
+    ## GRPC server side
+    ##
+    server:
+      ## TLS configuration
+      ## @param queryDistributor.grpc.server.tls.enabled Enable TLS encryption in the GRPC server
+      ## @param queryDistributor.grpc.server.tls.autoGenerated Create self-signed TLS certificates. Currently only supports PEM certificates
+      ## @param queryDistributor.grpc.server.tls.cert TLS Certificate for GRPC server - ignored if existingSecret is provided
+      ## @param queryDistributor.grpc.server.tls.key TLS Key for GRPC server - ignored if existingSecret is provided
+      ## @param queryDistributor.grpc.server.tls.ca TLS CA to verify clients against - ignored if existingSecret is provided
+      ## @param queryDistributor.grpc.server.tls.clientAuthEnabled Enable TLS client verification against provided CA
+      ## @param queryDistributor.grpc.server.tls.existingSecret Existing secret containing your own TLS certificates
+      ## e.g:
+      ## existingSecret:
+      ##   name: foo
+      ##   keyMapping:
+      ##     ca-cert: ca.pem
+      ##     tls-cert: cert.pem
+      ##     tls-key: key.pem
+      ##
+      tls:
+        enabled: false
+        autoGenerated: false
+        cert: ""
+        key: ""
+        ca: ""
+        clientAuthEnabled: true
+        existingSecret: {}
+    ## GRPC client side
+    ##
+    client:
+      ## @param queryDistributor.grpc.client.serverName Server name to verify the hostname on the returned GRPC certificates
+      ##
+      serverName: ""
+      ## TLS configuration
+      ## @param queryDistributor.grpc.client.tls.enabled Enable TLS encryption in the GRPC server
+      ## @param queryDistributor.grpc.client.tls.autoGenerated Create self-signed TLS certificates. Currently only supports PEM certificates
+      ## @param queryDistributor.grpc.client.tls.cert TLS Certificate for GRPC server - ignored if existingSecret is provided
+      ## @param queryDistributor.grpc.client.tls.key TLS Key for GRPC server - ignored if existingSecret is provided
+      ## @param queryDistributor.grpc.client.tls.ca TLS CA to verify clients against - ignored if existingSecret is provided
+      ## @param queryDistributor.grpc.client.tls.existingSecret Existing secret containing your own TLS certificates
+      ## e.g:
+      ## existingSecret:
+      ##   name: foo
+      ##   keyMapping:
+      ##     ca-cert: ca.pem
+      ##     tls-cert: cert.pem
+      ##     tls-key: key.pem
+      ##
+      tls:
+        enabled: false
+        autoGenerated: false
+        cert: ""
+        key: ""
+        ca: ""
+        existingSecret: {}
+  ## Network Policies
+  ## Ref: https://kubernetes.io/docs/concepts/services-networking/network-policies/
+  ##
+  networkPolicy:
+    ## @param queryDistributor.networkPolicy.enabled Specifies whether a NetworkPolicy should be created
+    ##
+    enabled: true
+    ## @param queryDistributor.networkPolicy.allowExternal Don't require client label for connections
+    ## The Policy model to apply. When set to false, only pods with the correct
+    ## client label will have network access to the ports the application is listening
+    ## on. When true, the app will accept connections from any source
+    ## (with the correct destination port).
+    ##
+    allowExternal: true
+    ## @param queryDistributor.networkPolicy.allowExternalEgress Allow the pod to access any range of port and all destinations.
+    ##
+    allowExternalEgress: true
+    ## @param queryDistributor.networkPolicy.extraIngress [array] Add extra ingress rules to the NetworkPolicy
+    ## e.g:
+    ## extraIngress:
+    ##   - ports:
+    ##       - port: 1234
+    ##     from:
+    ##       - podSelector:
+    ##           - matchLabels:
+    ##               - role: frontend
+    ##       - podSelector:
+    ##           - matchExpressions:
+    ##               - key: role
+    ##                 operator: In
+    ##                 values:
+    ##                   - frontend
+    extraIngress: []
+    ## @param queryDistributor.networkPolicy.extraEgress [array] Add extra ingress rules to the NetworkPolicy
+    ## e.g:
+    ## extraEgress:
+    ##   - ports:
+    ##       - port: 1234
+    ##     to:
+    ##       - podSelector:
+    ##           - matchLabels:
+    ##               - role: frontend
+    ##       - podSelector:
+    ##           - matchExpressions:
+    ##               - key: role
+    ##                 operator: In
+    ##                 values:
+    ##                   - frontend
+    ##
+    extraEgress: []
+    ## @param queryDistributor.networkPolicy.ingressNSMatchLabels [object] Labels to match to allow traffic from other namespaces
+    ## @param queryDistributor.networkPolicy.ingressNSPodMatchLabels [object] Pod labels to match to allow traffic from other namespaces
+    ##
+    ingressNSMatchLabels: {}
+    ingressNSPodMatchLabels: {}
+  ## Service parameters
+  ##
+  service:
+    ## @param queryDistributor.service.type Kubernetes service type
+    ##
+    type: ClusterIP
+    ## @param queryDistributor.service.ports.http Thanos Query service HTTP port
+    ##
+    ports:
+      http: 9090
+    ## @param queryDistributor.service.nodePorts.http Specify the Thanos Query HTTP nodePort value for the LoadBalancer and NodePort service types
+    ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
+    ##
+    nodePorts:
+      http: ""
+    ## @param queryDistributor.service.clusterIP Thanos Query service clusterIP IP
+    ## e.g:
+    ## clusterIP: None
+    ##
+    clusterIP: ""
+    ## @param queryDistributor.service.loadBalancerIP Load balancer IP if service type is `LoadBalancer`
+    ## Set the LoadBalancer service type to internal only
+    ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#internal-load-balancer
+    ##
+    loadBalancerIP: ""
+    ## @param queryDistributor.service.loadBalancerSourceRanges Address that are allowed when service is LoadBalancer
+    ## https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service
+    ## e.g:
+    ## loadBalancerSourceRanges:
+    ## - 10.10.10.0/24
+    ##
+    loadBalancerSourceRanges: []
+    ## @param queryDistributor.service.externalTrafficPolicy Thanos Query service externalTrafficPolicy
+    ## Denotes if this Service desires to route external traffic to node-local or cluster-wide endpoints
+    ##
+    externalTrafficPolicy: Cluster
+    ## @param queryDistributor.service.labels Labels for Thanos Query service
+    ##
+    labels: {}
+    ## @param queryDistributor.service.annotations Annotations for Thanos Query service
+    ##
+    annotations: {}
+    ## @param queryDistributor.service.extraPorts Extra ports to expose in the Thanos Query service
+    ##
+    extraPorts: []
+    ## @param queryDistributor.service.labelSelectorsOverride Selector for Thanos Query service
+    ##
+    labelSelectorsOverride: {}
+    ## @param queryDistributor.service.additionalHeadless Additional Headless service
+    ##
+    additionalHeadless: false
+    ## Headless service properties
+    ##
+    headless:
+      ## @param queryDistributor.service.headless.annotations Annotations for the headless service.
+      ##
+      annotations: {}
+  ## Service GRPC parameters
+  ##
+  serviceGrpc:
+    ## @param queryDistributor.serviceGrpc.type Kubernetes service type
+    ##
+    type: ClusterIP
+    ## @param queryDistributor.serviceGrpc.ports.grpc Thanos Query service GRPC port
+    ##
+    ports:
+      grpc: 10901
+    ## @param queryDistributor.serviceGrpc.nodePorts.grpc Specify the Thanos Query GRPC nodePort value for the LoadBalancer and NodePort service types
+    ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
+    ##
+    nodePorts:
+      grpc: ""
+    ## @param queryDistributor.serviceGrpc.clusterIP Thanos Query service clusterIP IP
+    ## e.g:
+    ## clusterIP: None
+    ##
+    clusterIP: ""
+    ## @param queryDistributor.serviceGrpc.loadBalancerIP Load balancer IP if service type is `LoadBalancer`
+    ## Set the LoadBalancer service type to internal only
+    ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#internal-load-balancer
+    ##
+    loadBalancerIP: ""
+    ## @param queryDistributor.serviceGrpc.loadBalancerSourceRanges Address that are allowed when service is LoadBalancer
+    ## https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service
+    ## e.g:
+    ## loadBalancerSourceRanges:
+    ## - 10.10.10.0/24
+    ##
+    loadBalancerSourceRanges: []
+    ## @param queryDistributor.serviceGrpc.externalTrafficPolicy Thanos Query service externalTrafficPolicy
+    ## Denotes if this Service desires to route external traffic to node-local or cluster-wide endpoints
+    ##
+    externalTrafficPolicy: Cluster
+    ## @param queryDistributor.serviceGrpc.labels Labels for Thanos Query service GRPC
+    ##
+    labels: {}
+    ## @param queryDistributor.serviceGrpc.annotations Annotations for Thanos Query service
+    ##
+    annotations: {}
+    ## @param queryDistributor.serviceGrpc.extraPorts Extra ports to expose in the Thanos Query service
+    ##
+    extraPorts: []
+    ## @param queryDistributor.serviceGrpc.labelSelectorsOverride Selector for Thanos Query service
+    ##
+    labelSelectorsOverride: {}
+    ## @param queryDistributor.serviceGrpc.additionalHeadless Additional Headless service
+    ##
+    additionalHeadless: false
+    ## Headless service properties
+    ##
+    headless:
+      ## @param queryDistributor.serviceGrpc.headless.annotations Annotations for the headless service.
+      ##
+      annotations: {}
+  ## Autoscaling parameters
+  ## @param queryDistributor.automountServiceAccountToken Enable/disable auto mounting of the service account token only for the deployment
+  ##
+  automountServiceAccountToken: true
+  ## ServiceAccount configuration
+  ## @param queryDistributor.serviceAccount.create Specifies whether a ServiceAccount should be created
+  ## @param queryDistributor.serviceAccount.name Name of the service account to use. If not set and create is true, a name is generated using the fullname template.
+  ## @param queryDistributor.serviceAccount.annotations Annotations for Thanos Query Service Account
+  ## @param queryDistributor.serviceAccount.automountServiceAccountToken Enable/disable auto mounting of the service account token
+  ##
+  serviceAccount:
+    create: true
+    name: ""
+    annotations: {}
+    automountServiceAccountToken: false
+  ## RBAC configuration
+  ##
+  rbac:
+    ## @param queryDistributor.rbac.create Create a ClusterRole and ClusterRoleBinding for the Thanos Query Service Account
+    ##
+    create: false
+    ## @param queryDistributor.rbac.rules Custom RBAC rules to set
+    ## e.g:
+    ## rules:
+    ##   - apiGroups:
+    ##       - ""
+    ##     resources:
+    ##       - pods
+    ##     verbs:
+    ##       - get
+    ##       - list
+    ##
+    rules: []
+  ## @param queryDistributor.pspEnabled Whether to create a PodSecurityPolicy for Thanos Query
+  ## WARNING: PodSecurityPolicy is deprecated in Kubernetes v1.21 or later, unavailable in v1.25 or later
+  ##
+  pspEnabled: false
+  ## Thanos Query Autoscaling configuration
+  ## ref: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+  ## @param queryDistributor.autoscaling.enabled Enable autoscaling for Thanos Query
+  ## @param queryDistributor.autoscaling.minReplicas Minimum number of Thanos Query replicas
+  ## @param queryDistributor.autoscaling.maxReplicas Maximum number of Thanos Query replicas
+  ## @param queryDistributor.autoscaling.targetCPU Target CPU utilization percentage
+  ## @param queryDistributor.autoscaling.targetMemory Target Memory utilization percentage
+  ## @param queryDistributor.autoscaling.targetPodMetrics [array] List of custom pod metrics name and averageValue to evaluate for scaling
+  ## e.g.
+  ## targetPodMetrics:
+  ## - name: thanos_queryDistributor_range_queryDistributor_duration
+  ##   averageValue: 2
+  ## - name: thanos_queryDistributor_promql_duration_metric
+  ##   averageValue: 0.5
+  ##
+  autoscaling:
+    enabled: false
+    minReplicas: ""
+    maxReplicas: ""
+    targetCPU: ""
+    targetMemory: ""
+    targetPodMetrics: []
+  ## Thanos Query Pod Disruption Budget configuration
+  ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb
+  ## @param queryDistributor.pdb.create Enable/disable a Pod Disruption Budget creation for Thanos Query
+  ## @param queryDistributor.pdb.minAvailable Minimum number/percentage of pods that should remain scheduled
+  ## @param queryDistributor.pdb.maxUnavailable Maximum number/percentage of pods that may be made unavailable
+  ##
+  pdb:
+    create: true
+    minAvailable: ""
+    maxUnavailable: ""
+  ## Configure the ingress resource that allows you to access Thanos Query
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/ingress/
+  ##
+  ingress:
+    ## @param queryDistributor.ingress.enabled Enable ingress controller resource
+    ##
+    enabled: false
+    ## @param queryDistributor.ingress.hostname Default host for the ingress resource
+    ##
+    hostname: thanos.local
+    ## @param queryDistributor.ingress.secretName Custom secretName for the ingress resource
+    ## If queryDistributor.ingress.secretName is not set, the secret will be named as follows: queryDistributor.ingress.hostname-tls
+    secretName: ""
+    ## @param queryDistributor.ingress.ingressClassName IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)
+    ## This is supported in Kubernetes 1.18+ and required if you have more than one IngressClass marked as the default for your cluster .
+    ## ref: https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/
+    ##
+    ingressClassName: ""
+    ## @param queryDistributor.ingress.annotations Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations.
+    ## For a full list of possible ingress annotations, please see
+    ## ref: https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/nginx-configuration/annotations.md
+    ## Use this parameter to set the required annotations for cert-manager, see
+    ## ref: https://cert-manager.io/docs/usage/ingress/#supported-annotations
+    ##
+    ## e.g:
+    ## annotations:
+    ##   kubernetes.io/ingress.class: nginx
+    ##   cert-manager.io/cluster-issuer: cluster-issuer-name
+    ##
+    annotations: {}
+    ## @param queryDistributor.ingress.extraHosts The list of additional hostnames to be covered with this ingress record.
+    ## Most likely the hostname above will be enough, but in the event more hosts are needed, this is an array
+    ## extraHosts:
+    ## - name: thanos.local
+    ##   path: /
+    ##   pathType: ImplementationSpecific
+    ##
+    extraHosts: []
+    ## @param queryDistributor.ingress.extraTls The tls configuration for additional hostnames to be covered with this ingress record.
+    ## see: https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+    ## extraTls:
+    ## - hosts:
+    ##     - thanos.local
+    ##   secretName: thanos.local-tls
+    ##
+    extraTls: []
+    ## @param queryDistributor.ingress.secrets If you're providing your own certificates, please use this to add the certificates as secrets
+    ## key and certificate should start with -----BEGIN CERTIFICATE----- or
+    ## -----BEGIN RSA PRIVATE KEY-----
+    ##
+    ## name should line up with a tlsSecret set further up
+    ## If you're using cert-manager, this is unneeded, as it will create the secret for you if it is not set
+    ##
+    ## It is also possible to create and manage the certificates outside of this helm chart
+    ## Please see README.md for more information
+    ## e.g:
+    ## - name: thanos.local-tls
+    ##   key:
+    ##   certificate:
+    ##
+    secrets: []
+    ## @param queryDistributor.ingress.extraRules Additional rules to be covered with this ingress record
+    ## ref: https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    ## e.g:
+    ## extraRules:
+    ## - host: example.local
+    ##     http:
+    ##       path: /
+    ##       backend:
+    ##         service:
+    ##           name: example-svc
+    ##           port:
+    ##             name: http
+    ##
+    extraRules: []
+    ## @param queryDistributor.ingress.tls Enable TLS configuration for the hostname defined at `queryDistributor.ingress.hostname` parameter
+    ## TLS certificates will be retrieved from a TLS secret with name: `{{- printf "%s-tls" .Values.queryDistributor.ingress.hostname }}`
+    ## You can:
+    ##   - Use the `queryDistributor.ingress.secrets` parameter to create this TLS secret
+    ##   - Rely on cert-manager to create it by setting the corresponding annotations
+    ##   - Rely on Helm to create self-signed certificates by setting `queryDistributor.ingress.selfSigned=true`
+    ##
+    tls: false
+    ## @param queryDistributor.ingress.selfSigned Create a TLS secret for this ingress record using self-signed certificates generated by Helm
+    ##
+    selfSigned: false
+    ## @param queryDistributor.ingress.apiVersion Force Ingress API version (automatically detected if not set)
+    ##
+    apiVersion: ""
+    ## @param queryDistributor.ingress.path Ingress path
+    ##
+    path: /
+    ## @param queryDistributor.ingress.pathType Ingress path type
+    ##
+    pathType: ImplementationSpecific
+    ## Create an ingress object for the GRPC service. This requires an HTTP/2
+    ## capable Ingress controller (eg. traefik using AWS NLB). Example annotations
+    ## - ingress.kubernetes.io/protocol: h2c
+    ## - service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    ## - service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
+    ## For more information see https://kubernetes.io/docs/concepts/cluster-administration/cloud-providers/
+    ## and also the documentation for your ingress controller.
+    ##
+    ## The options that are accepted are identical to the HTTP one listed above
+    ##
+    grpc:
+      ## @param queryDistributor.ingress.grpc.enabled Enable ingress controller resource (GRPC)
+      ##
+      enabled: false
+      ## @param queryDistributor.ingress.grpc.hostname Default host for the ingress resource (GRPC)
+      ##
+      hostname: thanos-grpc.local
+      ## @param queryDistributor.ingress.grpc.secretName Custom secretName for the ingress resource (GRPC)
+      ## If queryDistributor.ingress.grpc.secretName is not set, the secret will be named as follows: queryDistributor.ingress.grpc.hostname-tls
+      secretName: ""
+      ## @param queryDistributor.ingress.grpc.ingressClassName IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)
+      ## This is supported in Kubernetes 1.18+ and required if you have more than one IngressClass marked as the default for your cluster .
+      ## ref: https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/
+      ##
+      ingressClassName: ""
+      ## @param queryDistributor.ingress.grpc.annotations Additional annotations for the Ingress resource (GRPC). To enable certificate autogeneration, place here your cert-manager annotations.
+      ## For a full list of possible ingress annotations, please see
+      ## ref: https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/nginx-configuration/annotations.md
+      ## Use this parameter to set the required annotations for cert-manager, see
+      ## ref: https://cert-manager.io/docs/usage/ingress/#supported-annotations
+      ##
+      ## Examples:
+      ## kubernetes.io/ingress.class: nginx
+      ## cert-manager.io/cluster-issuer: cluster-issuer-name
+      ##
+      annotations: {}
+      ## @param queryDistributor.ingress.grpc.extraHosts The list of additional hostnames to be covered with this ingress record.
+      ## Most likely the hostname above will be enough, but in the event more hosts are needed, this is an array
+      ## extraHosts:
+      ## - name: thanos-grpc.local
+      ##   path: /
+      ##
+      extraHosts: []
+      ## @param queryDistributor.ingress.grpc.extraTls The tls configuration for additional hostnames to be covered with this ingress record.
+      ## see: https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+      ## extraTls:
+      ## - hosts:
+      ##     - thanos-grpc.local
+      ##   secretName: thanos-grpc.local-tls
+      ##
+      extraTls: []
+      ## @param queryDistributor.ingress.grpc.secrets If you're providing your own certificates, please use this to add the certificates as secrets
+      ## key and certificate should start with -----BEGIN CERTIFICATE----- or
+      ## -----BEGIN RSA PRIVATE KEY-----
+      ##
+      ## name should line up with a tlsSecret set further up
+      ## If you're using cert-manager, this is unneeded, as it will create the secret for you if it is not set
+      ##
+      ## It is also possible to create and manage the certificates outside of this helm chart
+      ## Please see README.md for more information
+      ## e.g:
+      ## - name: thanos-grpc.local-tls
+      ##   key:
+      ##   certificate:
+      ##
+      secrets: []
+      ## @param queryDistributor.ingress.grpc.extraRules Additional rules to be covered with this ingress record
+      ## ref: https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+      ## e.g:
+      ## extraRules:
+      ## - host: example.local
+      ##     http:
+      ##       path: /
+      ##       backend:
+      ##         service:
+      ##           name: example-svc
+      ##           port:
+      ##             name: http
+      ##
+      extraRules: []
+      ## @param queryDistributor.ingress.grpc.tls Enable TLS configuration for the hostname defined at `queryDistributor.ingress.grpc.hostname` parameter
+      ## TLS certificates will be retrieved from a TLS secret with name: `{{- printf "%s-tls" .Values.queryDistributor.ingress.grpc.hostname }}`
+      ## You can:
+      ##   - Use the `queryDistributor.ingress.grpc.secrets` parameter to create this TLS secret
+      ##   - Rely on cert-manager to create it by setting the corresponding annotations
+      ##   - Rely on Helm to create self-signed certificates by setting `queryDistributor.ingress.grpc.selfSigned=true`
+      ##
+      tls: false
+      ## @param queryDistributor.ingress.grpc.selfSigned Create a TLS secret for this ingress record using self-signed certificates generated by Helm
+      ##
+      selfSigned: false
+      ## @param queryDistributor.ingress.grpc.apiVersion Override API Version (automatically detected if not set)
+      ##
+      apiVersion: ""
+      ## @param queryDistributor.ingress.grpc.path Ingress Path
+      ##
+      path: /
+      ## @param queryDistributor.ingress.grpc.pathType Ingress Path type
       ##
       pathType: ImplementationSpecific
 ## @section Thanos Query Frontend parameters
