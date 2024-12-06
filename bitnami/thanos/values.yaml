@@ -944,26 +944,11 @@ queryDistributor:
   ## @param queryDistributor.logFormat Thanos Query log format
   ##
   logFormat: logfmt
-  ## Dynamically configure store APIs using DNS discovery
-  ## @param queryDistributor.dnsDiscovery.enabled Enable store APIs discovery via DNS
-  ## @param queryDistributor.dnsDiscovery.sidecarsService Sidecars service name to discover them using DNS discovery
-  ## @param queryDistributor.dnsDiscovery.sidecarsNamespace Sidecars namespace to discover them using DNS discovery
+  ## Dynamically configure Query APIs using DNS discovery
+  ## @param queryDistributor.dnsDiscovery.enabled Enable Query APIs discovery via DNS
   ##
   dnsDiscovery:
     enabled: true
-    sidecarsService: ""
-    sidecarsNamespace: ""
-  ## @param queryDistributor.stores Statically configure store APIs to connect with Thanos Query
-  ##
-  stores: []
-  ## @param queryDistributor.sdConfig Query Service Discovery Configuration
-  ## Specify content for servicediscovery.yml
-  ##
-  sdConfig: ""
-  ## @param queryDistributor.existingSDConfigmap Name of existing ConfigMap with Ruler configuration
-  ## NOTE: This will override queryDistributor.sdConfig
-  ##
-  existingSDConfigmap: ""
   ## @param queryDistributor.extraEnvVars Extra environment variables for Thanos Query container
   ## e.g:
   ## extraEnvVars:

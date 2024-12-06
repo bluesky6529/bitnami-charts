@@ -107,42 +107,8 @@ spec:
             {{- if (include "thanos.httpConfigEnabled" .) }}
             - --http.config=/conf/http/http-config.yml
             {{- end }}
-            {{- if or (include "thanos.queryDistributor.createSDConfigmap" .) .Values.queryDistributor.existingSDConfigmap }}
-            - --store.sd-files=/conf/sd/servicediscovery.yml
-            {{- end }}
-            {{- if and .Values.queryDistributor.dnsDiscovery.enabled .Values.queryDistributor.dnsDiscovery.sidecarsService .Values.queryDistributor.dnsDiscovery.sidecarsNamespace }}
-            - --endpoint=dnssrv+_grpc._tcp.{{- include "common.tplvalues.render" ( dict "value" .Values.queryDistributor.dnsDiscovery.sidecarsService "context" $) -}}.{{- include "common.tplvalues.render"  ( dict "value" .Values.queryDistributor.dnsDiscovery.sidecarsNamespace "context" $) -}}.svc.{{ .Values.clusterDomain }}
-            {{- end }}
-            {{- if and .Values.storegateway.enabled .Values.storegateway.sharded.enabled }}
-            {{- $shards := int 0 }}
-            {{- if .Values.storegateway.sharded.hashPartitioning.shards }}
-            {{- $shards = int .Values.storegateway.sharded.hashPartitioning.shards }}
-            {{- else }}
-            {{- $shards = len .Values.storegateway.sharded.timePartitioning }}
-            {{- end }}
-            {{- range $index, $_ := until $shards }}
-            {{- if $.Values.storegateway.useEndpointGroup }}
-            - --endpoint-group={{ include "common.names.fullname" $ }}-storegateway-{{ toString $index }}.{{ $.Release.Namespace }}.svc.{{ $.Values.clusterDomain }}:{{ $.Values.storegateway.service.ports.grpc }}
-            {{- else }}
-            - --endpoint=dnssrv+_grpc._tcp.{{ include "common.names.fullname" $ }}-storegateway-{{ toString $index }}.{{ $.Release.Namespace }}.svc.{{ $.Values.clusterDomain }}
-            {{- end }}
-            {{- end }}
-            {{- end }}
-            {{- if and .Values.storegateway.enabled .Values.queryDistributor.dnsDiscovery.enabled (not .Values.storegateway.sharded.enabled ) }}
-            {{- if .Values.storegateway.useEndpointGroup }}
-            - --endpoint-group={{ include "thanos.storegateway.fullname" . }}{{ if .Values.storegateway.service.additionalHeadless }}-headless{{ end }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:{{ .Values.storegateway.service.ports.grpc }}
-            {{- else }}
-            - --endpoint=dnssrv+_grpc._tcp.{{ include "thanos.storegateway.fullname" . }}{{ if .Values.storegateway.service.additionalHeadless }}-headless{{ end }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}
-            {{- end }}
-            {{- end }}
-            {{- if and .Values.ruler.enabled .Values.queryDistributor.dnsDiscovery.enabled }}
-            - --endpoint=dnssrv+_grpc._tcp.{{ include "thanos.ruler.fullname" . }}{{ if .Values.ruler.service.additionalHeadless }}-headless{{ end }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}
-            {{- end }}
-            {{- if and .Values.receive.enabled .Values.queryDistributor.dnsDiscovery.enabled }}
-            - --endpoint=dnssrv+_grpc._tcp.{{ include "thanos.receive.fullname" . }}{{ if .Values.receive.service.additionalHeadless }}-headless{{ end }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}
-            {{- end }}
-            {{- range .Values.queryDistributor.stores }}
-            - --endpoint={{ . }}
+            {{- if and .Values.query.enabled .Values.queryDistributor.dnsDiscovery.enabled }}
+            - --endpoint=dnssrv+_grpc._tcp.{{ include "thanos.query.fullname" . }}-grpc.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}
             {{- end }}
             {{- if .Values.queryDistributor.grpc.server.tls.enabled }}
             - --grpc-server-tls-cert=/certs/server/{{ include "common.secrets.key" (dict "existingSecret" .Values.queryDistributor.grpc.server.tls.existingSecret "key" "tls-cert") }}
